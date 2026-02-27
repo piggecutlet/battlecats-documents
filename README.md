@@ -94,3 +94,15 @@ advertisement where you can draw lucky capsule once
 sale 111
 advertisement where you can get XP10000
 ```
+
+## seed
+
+```js
+// https://gitlab.com/godfat/battle-cats-rolls/-/blob/master/Seeker/Seed.hs#L21
+function xorshift32(x) {
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 15;
+  return x >>> 0;
+}
+```
