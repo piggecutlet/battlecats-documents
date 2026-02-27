@@ -66,3 +66,31 @@ No need to delete storage or uninstall !
 `/data/data/jp.co.ponos.battlecats/files/SAVE_DATA`
 `/data/data/jp.co.ponos.battlecats/files/SAVE_DATA.OLD`
 `/data/data/jp.co.ponos.battlecats/shared_prefs/MyActivity.xml`
+
+## イベント系
+
+- event\DatFileCrypter.java 日本は確かめたけど海外は動作未確認
+
+```
+sale 105
+gamatoto advertisement & Energie recovery
+
+sale 106
+gold pass
+※If it disappears, you can't buy gold pass.
+
+sale 107
+gamatoto shrine
+
+sale 108
+advertisement where you can double xp
+
+sale 109
+advertisement where you can revival
+
+sale 110
+advertisement where you can draw lucky capsule once
+
+sale 111
+advertisement where you can get XP10000
+```
