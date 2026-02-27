@@ -15,3 +15,9 @@
 
 - 10秒くらいでリセマラ完了した記憶
 - reroll.py
+
+## Native
+
+6.2.2 なし
+6.7.4 libbattlecats-jni.so
+7.0.1 libnative-lib.so
