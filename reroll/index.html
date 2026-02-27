@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <a href=""></a>
+    <script>
+      async function name(params) {
+        const response = await fetch("localizable.tsv");
+        const text = response.text();
+
+        const lines = text.split("\n");
+
+        lines.forEach(line => {
+          if (line.startswith("scheme_item_param_")) {
+            document.createElement(a);
+            a.href =
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
