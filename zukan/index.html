@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0 maximum-scale=1.0, user-scalable=0"
+    />
+    <title>にゃんこ図鑑</title>
+    <link rel="stylesheet" href="./zukan.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      a:link,
+      a:visited,
+      a:hover,
+      a:active {
+        color: #99c3ff;
+      }
+      article {
+        background-color: #141414;
+        color: #fff;
+        margin: 0 auto;
+        max-width: 740px;
+        min-height: 100vh;
+      }
+      body {
+        background-image: url("../img/bg.png");
+      }
+      .title {
+        background-color: #2c303d;
+        color: #e3e3e3;
+        padding: 5px;
+      }
+      * {
+        touch-action: manipulation;
+      }
+      table {
+        /* 境界線を共有 */
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 100%;
+      }
+      td {
+        /* solid: 実線 */
+        border: 1px solid #373b3e;
+        text-align: center;
+        height: auto;
+        width: 20vw;
+      }
+      td img {
+        height: 100%;
+        width: 100%;
+      }
+      details,
+      summary {
+        padding: 10px;
+      }
+      .info {
+        padding: 10px;
+      }
+      .info div {
+        padding: 5px 0;
+      }
+      .name-toggle {
+        padding-right: 10px;
+        text-align: right;
+      }
+      .top {
+        font-size: 24px;
+        padding-left: 10px;
+      }
+    </style>
+    <script type="module" defer>
+      import { decodeSaveQuery, encodeSaveQuery } from "./ybc.js";
+
+      const rarities = {
+        0: "基本",
+        1: "EX",
+        2: "レア",
+        3: "激レア",
+        4: "超激レア",
+        5: "伝説レア",
+      };
+
+      const ownColor = "rgb(125, 113, 91)";
+      const notOwnColor = "rgb(20, 20, 20)";
+
+      (async function () {
+        const response = await fetch("/unit.csv");
+        const text = await response.text();
+
+        // Windows | Unix | Mac
+        const lines = text.split(/\r\n|\n/);
+
+        const array = lines.map((line) => line.split(","));
+        // 図鑑順に並び替える
+        array.sort((a, b) => Number(a[2]) - Number(b[2]));
+
+        for (let i = 0; i < array.length; i++) {
+          const unit = array[i];
+          const id = unit[0];
+          const isDisplay = unit[1];
+          const rarity = unit[3];
+          const name = unit[4];
+
+          // 海外限定や精霊のためスキップ
+          if (isDisplay === "0") {
+            continue;
+          }
+
+          const table = document.getElementById(rarities[rarity]);
+          let trs = table.querySelectorAll("tr");
+          let tr;
+          if (trs.length === 0) {
+            tr = document.createElement("tr");
+            table.appendChild(tr);
+          } else {
+            tr = trs[trs.length - 1];
+          }
+
+          let tds = tr.querySelectorAll("td");
+          if (tds.length === 6) {
+            tr = document.createElement("tr");
+            table.appendChild(tr);
+          }
+
+          let td;
+          td = document.createElement("td");
+          tr.appendChild(td);
+
+          const img = document.createElement("img");
+          if (name.startsWith("古びたタマゴ")) {
+            // タマゴ系は第三形態の画像
+            img.src = `../assets/UnitLocal/uni${id.padStart(3, "0")}_s00.png`;
+          } else {
+            img.src = `../assets/UnitLocal/uni${id.padStart(3, "0")}_f00.png`;
+          }
+          td.appendChild(img);
+
+          const p = document.createElement("p");
+          p.textContent = name;
+          p.style.display = "none";
+          td.appendChild(p);
+
+          td.id = id;
+        }
+
+        // テーブルを設定した後に実行
+        setNameToggle();
+        toggleCellBackgroundColor();
+        setColor();
+        setInfo();
+        toggleOwn();
+
+        setTotal(array);
+      })();
+
+      function setNameToggle() {
+        const nameToggle = document.getElementById("name-toggle");
+
+        nameToggle.addEventListener("change", function () {
+          const tds = document.querySelectorAll("td");
+          if (this.checked) {
+            tds.forEach((td) => {
+              const p = td.querySelector("p");
+              if (p !== null) {
+                p.style.display = "";
+              }
+            });
+          } else {
+            tds.forEach((td) => {
+              const p = td.querySelector("p");
+              if (p !== null) {
+                p.style.display = "none";
+              }
+            });
+          }
+        });
+      }
+
+      function toggleCellBackgroundColor() {
+        const tds = document.querySelectorAll("td");
+        tds.forEach((td) => {
+          td.addEventListener("click", () => {
+            if (td.style.backgroundColor == ownColor) {
+              td.style.backgroundColor = notOwnColor;
+            } else {
+              td.style.backgroundColor = ownColor;
+            }
+
+            setReplaceState();
+            setInfo();
+          });
+        });
+      }
+
+      function setReplaceState() {
+        // 空文字にしないとundefinedになる
+        let ids = "";
+
+        for (let i = 0; i < 1001; i++) {
+          const td = document.getElementById(String(i));
+          if (!td) {
+            ids = ids + "0";
+            continue;
+          }
+
+          if (td.style.backgroundColor == ownColor) {
+            ids = ids + "1";
+          } else {
+            ids = ids + "0";
+          }
+        }
+
+        const encodedData = encodeSaveQuery(ids);
+        history.replaceState({}, "", `?sd=${encodedData}`);
+      }
+
+      function setInfo() {
+        let total = 0;
+        Object.keys(rarities).forEach((key) => {
+          const table = document.getElementById(rarities[key]);
+          if (table === null) {
+            return;
+          }
+          const tds = table.querySelectorAll("td");
+          let count = 0;
+          tds.forEach((td) => {
+            if (td.style.backgroundColor == ownColor) {
+              count = count + 1;
+            }
+          });
+
+          const span = document.getElementById(`own-${key}`);
+          if (span !== null) {
+            span.textContent = String(count);
+          }
+          total = total + count;
+        });
+
+        const totale = document.getElementById(`own-6`);
+        if (totale !== null) {
+          totale.textContent = String(total);
+        }
+      }
+
+      function setColor() {
+        const params = new URLSearchParams(location.search);
+        const sd = params.get("sd");
+        if (!sd) {
+          return;
+        }
+
+        const decodedData = decodeSaveQuery(sd);
+
+        const ids = decodedData.split("");
+        ids.forEach((is, id) => {
+          const element = document.getElementById(id);
+
+          // ybcはIDが1000くらいまであるため
+          if (element === null) {
+            return;
+          }
+
+          if (is == "0") {
+            element.style.backgroundColor = notOwnColor;
+          } else {
+            element.style.backgroundColor = ownColor;
+          }
+        });
+      }
+
+      function toggleOwn() {
+        const ownToggle = document.getElementById("own-toggle");
+        if (!(ownToggle instanceof HTMLInputElement)) {
+          console.error("ownToggle is not HTMLInputElement");
+          return;
+        }
+
+        ownToggle.addEventListener("change", function () {
+          const tds = document.querySelectorAll("td");
+          if (this.checked) {
+            tds.forEach((td) => {
+              if (td.style.backgroundColor == ownColor) {
+                td.querySelector("img").style.display = "";
+              } else {
+                td.querySelector("img").style.display = "none";
+              }
+            });
+          } else {
+            tds.forEach((td) => {
+              td.querySelector("img").style.display = "";
+            });
+          }
+        });
+
+        // not-own-toggle
+
+        const notOwnToggle = document.getElementById("not-own-toggle");
+        notOwnToggle.addEventListener("change", function () {
+          const tds = document.querySelectorAll("td");
+          if (this.checked) {
+            tds.forEach((td) => {
+              if (td.style.backgroundColor == notOwnColor) {
+                td.querySelector("img").style.display = "";
+              } else {
+                td.querySelector("img").style.display = "none";
+              }
+            });
+          } else {
+            tds.forEach((td) => {
+              td.querySelector("img").style.display = "";
+            });
+          }
+        });
+      }
+
+      function setTotal(units) {
+        //   レア度の数
+        const rarityLen = Object.keys(rarities).length;
+        // console.log(rarityLen);
+
+        const totals = new Array(rarityLen);
+
+        for (const unit of units) {
+          const isDisplay = unit[1];
+
+          // 0: 非表示
+          // 1: 表示
+          if ("0" === isDisplay) {
+            continue;
+          }
+
+          const rarity = unit[3];
+
+          // NaNを防ぐ
+          if (totals[rarity] === undefined) {
+            totals[rarity] = 0;
+          }
+
+          totals[rarity]++;
+        }
+
+        //   debug
+        // console.log(totals);
+
+        for (let i = 0; i < rarityLen; i++) {
+          const span = document.getElementById(`total-${i}`);
+          span.textContent = totals[i];
+        }
+
+        // 全体の計算
+        const span = document.getElementById(`total-6`);
+        span.textContent = totals.reduce((a, b) => a + b, 0);
+      }
+
+      // SAVE_DATA.json
+      function displayAutoClicker() {
+        const params = new URLSearchParams(location.search);
+        const auto = params.get("auto");
+        if (auto) {
+          const div = document.getElementById("auto-clicker");
+          div.style.display = "block";
+        }
+      }
+      displayAutoClicker();
+
+      function autoClicker() {
+        const input = document.getElementById("save-data-json");
+        const p = document.getElementById("save-data-message");
+
+        input.addEventListener("change", (event) => {
+          if (0 === event.target.length) {
+            p.textContent = "SAVE_DATA.json を選択してください";
+            return;
+          }
+
+          const file = event.target.files[0];
+
+          if (file) {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+              let units = "";
+              const fileContent = e.target.result;
+              const SAVE_DATA = JSON.parse(fileContent);
+              const cats = SAVE_DATA.cats.cats;
+              for (let cat of cats) {
+                const id = cat.id;
+                const unlocked = cat.unlocked;
+                if (unlocked === 0) {
+                  // 未所持
+                  units += "0";
+                } else {
+                  // 所持
+                  // console.log(id + "所持");
+                  // document.getElementById(id).click();
+                  units += "1";
+                }
+              }
+              const encode = encodeSaveQuery(units);
+              console.log(`${encode}`);
+            };
+            reader.readAsText(file);
+          }
+        });
+      }
+      autoClicker();
+    </script>
+  </head>
+  <body>
+    <article>
+      <h2 class="title">にゃんこ図鑑</h2>
+
+      <nav class="info">
+        <div class="info">
+          <a href="#基本">基本</a> : <span id="own-0"></span> /
+          <span id="total-0"></span>
+        </div>
+        <div class="info">
+          <a href="#EX">EX</a> : <span id="own-1"></span> /
+          <span id="total-1"></span>
+        </div>
+        <div class="info">
+          <a href="#レア">レア</a> : <span id="own-2"></span> /
+          <span id="total-2"></span>
+        </div>
+        <div class="info">
+          <a href="#激レア">激レア</a> : <span id="own-3">0</span> /
+          <span id="total-3"></span>
+        </div>
+        <div class="info">
+          <a href="#超激レア">超激レア</a> : <span id="own-4"></span> /
+          <span id="total-4"></span>
+        </div>
+        <div class="info">
+          <a href="#伝説レア">伝説レア</a> : <span id="own-5"></span> /
+          <span id="total-5"></span>
+        </div>
+        <div class="info">
+          合計 : <span id="own-6"></span> / <span id="total-6"></span><br />
+        </div>
+      </nav>
+
+      <hr />
+
+      <div class="align-right">
+        <label>
+          <input type="checkbox" id="name-toggle" />
+          名前を表示
+        </label>
+
+        <span style="margin-inline: 10px"></span>
+
+        <label>
+          <input type="checkbox" id="own-toggle" />
+          所持 / 全表示
+        </label>
+
+        <span style="margin-inline: 10px"></span>
+
+        <label>
+          <input type="checkbox" id="not-own-toggle" />
+          未所持 / 全表示
+        </label>
+      </div>
+
+      <div id="auto-clicker" hidden>
+        <br />
+        <h3>自動選択</h3>
+        <p id="save-data-message">SAVE_DATA.json を選択してください</p>
+        <input type="file" accept=".json" id="save-data-json" />
+      </div>
+
+      <details open>
+        <summary>基本</summary>
+        <table id="基本"></table>
+      </details>
+
+      <hr />
+
+      <details open>
+        <summary>EX</summary>
+        <table id="EX"></table>
+      </details>
+
+      <hr />
+
+      <details open>
+        <summary>レア</summary>
+        <table id="レア"></table>
+      </details>
+
+      <hr />
+
+      <details open>
+        <summary>激レア</summary>
+        <table id="激レア"></table>
+      </details>
+
+      <hr />
+
+      <details open>
+        <summary>超激レア</summary>
+        <table id="超激レア"></table>
+      </details>
+
+      <hr />
+
+      <details open>
+        <summary>伝説レア</summary>
+        <table id="伝説レア"></table>
+      </details>
+
+      <br />
+      <br />
+
+      <a href="#" class="top">上へ</a>
+
+      <br />
+      <br />
+      <br />
+    </article>
+  </body>
+</html>
