@@ -9,10 +9,12 @@
 
 ## 手順
 
-1. `/data/data/jp.co.ponos.battlecats/files` にある目的のファイルを PC に移動
+1. Android のストレージ `/data/data/jp.co.ponos.battlecats/files` にある目的のファイルを PC に移動
 
   002a4b18244f32d7833fd81bc833b97f.dat: sale.tsv
+  
   09b1058188348630d98a08e0f731f6bd.dat: gatya.tsv
+  
   408f66def075926baea9466e70504a3b.dat: item.tsv
 
   詳細: [その他のファイル](./hash.md)
